@@ -35,7 +35,7 @@ pipeline {
             passwordVariable: 'Laltu1693@'
           )
         ]) {
-          sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
+          sh 'docker login -u $jeetlinux -p $Laltu1693@'
           sh 'docker tag my-python-app:latest jeetlinux/demo-docker:app1'
           sh 'docker push jeetlinux/demo-docker:app1'
         }
