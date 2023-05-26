@@ -2,53 +2,50 @@ pipeline {
   agent any
 
   stages {
-    stage('Checkout') {
+    stage("Checkout") {
       steps {
-        checkout scm
+        //Checkout GitHub repo
+        checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'GitHub', url: 'https://github.com/Biswajit1693/Simple-Login-Page']])
       }
     }
 
-    stage('Build') {
+    stage("Build The Docker image") {
       steps {
-        sh 'pip install -r requirement.txt'
+        sh 'sudo docker build -t applogin:latest .'
       }
     }
 
-    stage('Test') {
+    stage("Push to Dockerhub") {
       steps {
-        sh 'pytest'
+          // Login to Dockerhub
+            withCredentials([string(credentialsId: 'docker-passwd', variable: 'dockerpssd')]) {
+            sh 'sudo docker login -u jeetlinux -p ${dockerpssd}'
+                    
+                }
+
+          // Push to docker hub
+            sh 'sudo docker tag applogin:latest jeetlinux/demo-docker:v8'
+            sh 'sudo docker push jeetlinux/demo-docker:v8'
       }
     }
 
-    stage('Docker Build') {
+    stage("Deploy to kubernetes") {
       steps {
-        sh 'docker build -t my-python-app:latest .'
-      }
-    }
+        // Kubernetes configuration
+          withCredentials([file(credentialsId: 'kubemini', variable: 'KUBECONFIG')]) {
+          sh 'export KUBECONFIG=$KUBECONFIG'
 
-    stage('Docker Push') {
-      steps {
-        withCredentials([
-          usernamePassword(
-            credentialsId: 'docker-hub',
-            usernameVariable: 'jeetlinux',
-            passwordVariable: 'Laltu1693@'
-          )
-        ]) {
-          sh 'docker login -u $jeetlinux -p $Laltu1693@'
-          sh 'docker tag my-python-app:latest jeetlinux/demo-docker:app1'
-          sh 'docker push jeetlinux/demo-docker:app1'
-        }
-      }
-    }
+        //Deploy to k8s
 
-    stage('Kubernetes Deployment') {
-      steps {
-        withKubeConfig([credentialsId: 'minikube-cluster', serverUrl: 'https://192.168.49.2:8443']) {
-          sh 'kubectl config use-context minikube' // Set the Kubernetes context to Minikube
           sh 'kubectl apply -f deployment.yaml'
-        }
+
+          }
       }
+
     }
+    
+
   }
-}
+
+} 
+  
